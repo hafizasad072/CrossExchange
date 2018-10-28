@@ -15,7 +15,7 @@ namespace XOProject.Tests
 		Mock<IPortfolioRepository> _portfolioRepositoryMock = new Mock<IPortfolioRepository>();
 
 		int portfolioId = 1;
-
+        string symbol = "REL";
 		public TradeControllerTests()
 		{
 			_portfolioRepositoryMock
@@ -38,104 +38,15 @@ namespace XOProject.Tests
 						new Trade() { Action = "SELL", NoOfShares = 40, PortfolioId = portfolioId, Price = 4000, Symbol = "REL" }
 					}))
 				);
-		}
 
-		[Test]
-		public async Task Post_ReturnsInvalidPortfolio()
-		{
-			var tradeController = new TradeController(_shareRepositoryMock.Object, _tradeRepositoryMock.Object, _portfolioRepositoryMock.Object);
-
-			var trade = new TradeModel()
-			{
-				PortfolioId = -1
-			};
-
-			var result = await tradeController.Post(trade) as BadRequestObjectResult;
-
-			Assert.NotNull(result);
-			Assert.AreEqual(400, result.StatusCode);
-		}
-
-		[Test]
-		public async Task Post_ReturnsInvalidShare()
-		{
-			var tradeController = new TradeController(_shareRepositoryMock.Object, _tradeRepositoryMock.Object, _portfolioRepositoryMock.Object);
-
-			var trade = new TradeModel()
-			{
-				Symbol = "***"
-			};
-
-			var result = await tradeController.Post(trade) as BadRequestObjectResult;
-
-			Assert.NotNull(result);
-			Assert.AreEqual(400, result.StatusCode);
-		}
-
-		[Test]
-		public async Task Post_ReturnsInsufficientNumberOfShares()
-		{			
-			var tradeController = new TradeController(_shareRepositoryMock.Object, _tradeRepositoryMock.Object, _portfolioRepositoryMock.Object);
-
-			var trade = new TradeModel()
-			{
-				PortfolioId = 1,
-				Action = "SELL",
-				Symbol = "REL",
-				NoOfShares = 100
-			};
-
-			var result = await tradeController.Post(trade) as BadRequestObjectResult;
-
-			Assert.NotNull(result);
-			Assert.AreEqual(400, result.StatusCode);
-		}
-
-		[Test]
-		public async Task Post_ShouldInsertBuyTrade()
-		{
-			var trade = new TradeModel()
-			{
-				PortfolioId = 1,
-				Action = "BUY",
-				Symbol = "REL",
-				NoOfShares = 200
-			};
-
-			// Act
-			var tradeController = new TradeController(_shareRepositoryMock.Object, _tradeRepositoryMock.Object, _portfolioRepositoryMock.Object);
-
-			var result = await tradeController.Post(trade) as CreatedResult;
-
-			// Assert
-			Assert.NotNull(result);
-
-			Assert.NotNull(result);
-			Assert.AreEqual(201, result.StatusCode);
-		}
-
-		[Test]
-		public async Task Post_ShouldInsertSellTrade()
-		{
-			var trade = new TradeModel()
-			{
-				PortfolioId = 1,
-				Action = "SELL",
-				Symbol = "REL",
-				NoOfShares = 10
-			};
-
-			// Act
-			var tradeController = new TradeController(_shareRepositoryMock.Object, _tradeRepositoryMock.Object, _portfolioRepositoryMock.Object);
-
-			var result = await tradeController.Post(trade) as CreatedResult;
-
-			// Assert
-			Assert.NotNull(result);
-
-			Assert.NotNull(result);
-			Assert.AreEqual(201, result.StatusCode);
-		}
+            _tradeRepositoryMock.Setup(x => x.GetAnalysis(symbol))
+                .Returns(Task.FromResult(new List<TradeAnalysis>(new[]
+                    {
+                        new TradeAnalysis() { Action = "BUY", Average = 120, Sum = 12000, Maximum = 12000, Minimum = 0 },
+                        new TradeAnalysis() { Action = "SELL", Average = 40, Sum = 100, Maximum = 90,  Minimum = 10 }
+                    }))
+                );
+        }
 
 		[Test]
 		public async Task Get_ShouldReturnAllTradings()
@@ -152,5 +63,21 @@ namespace XOProject.Tests
 
 			Assert.NotZero(resultList.Count);
 		}
-	}
+
+        [Test]
+        public async Task GetAnalysis()
+        {
+            var tradeController = new TradeController(_shareRepositoryMock.Object, _tradeRepositoryMock.Object, _portfolioRepositoryMock.Object);
+
+            var result = await tradeController.GetAnalysis(symbol) as OkObjectResult;
+
+            Assert.NotNull(result);
+
+            var resultList = result.Value as List<TradeAnalysis>;
+
+            Assert.NotNull(result);
+
+            Assert.NotZero(resultList.Count);
+        }
+    }
 }
