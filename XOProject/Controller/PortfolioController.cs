@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace XOProject.Controller
 {
@@ -9,20 +10,19 @@ namespace XOProject.Controller
     {
         private IPortfolioRepository _portfolioRepository { get; set; }
 
-        public PortfolioController(IShareRepository shareRepository, ITradeRepository tradeRepository, IPortfolioRepository portfolioRepository)
+        public PortfolioController(IPortfolioRepository portfolioRepository)
         {
             _portfolioRepository = portfolioRepository;
         }
 
-        [HttpGet("{portFolioid}")]
-        public async Task<IActionResult> GetPortfolioInfo([FromRoute]int portFolioid)
+        [HttpGet("{portfolioId}")]
+        public async Task<IActionResult> GetPortfolioInfo([FromRoute]int portfolioId)
         {
-            var portfolio = _portfolioRepository.GetAll().Where(x => x.Id.Equals(portFolioid));
+			var portfolio = await _portfolioRepository.GetAsync(portfolioId);
             
             return Ok(portfolio);
         }
-
-
+		
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]Portfolio value)
         {

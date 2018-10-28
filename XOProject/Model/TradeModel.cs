@@ -4,10 +4,8 @@ namespace XOProject
 {
     public class TradeModel
     {
-        private TradeModel() { }
-
         [Required]
-        public string Symbol;
+        public string Symbol { get; set; }
 
         [Required]
         public int NoOfShares { get; set; }

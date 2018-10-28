@@ -1,14 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 
 namespace XOProject.Controller
 {
-    [Route("api/Trade/")]
+    [Route("api/Trade")]
     public class TradeController : ControllerBase
     {
         private IShareRepository _shareRepository { get; set; }
@@ -22,13 +20,13 @@ namespace XOProject.Controller
             _portfolioRepository = portfolioRepository;
         }
 
-
-        [HttpGet("{portfolioid}")]
-        public async Task<IActionResult> GetAllTradings([FromRoute]int portFolioid)
+        [HttpGet("{portfolioId}")]
+        public async Task<IActionResult> GetAllTradings([FromRoute]int portfolioId)
         {
-            var trade = _tradeRepository.Query().Where(x => x.PortfolioId.Equals(portFolioid));
+            var trade = await _tradeRepository.GetAllTradings(portfolioId);
             return Ok(trade);
         }
+
 
 
         /// <summary>
@@ -41,11 +39,9 @@ namespace XOProject.Controller
         [HttpGet("Analysis/{symbol}")]
         public async Task<IActionResult> GetAnalysis([FromRoute]string symbol)
         {
-            var list = new List<TradeAnalysis>();
+            List<TradeAnalysis> list = _tradeRepository.GetAnalysis(symbol);
 
             return Ok(list);
         }
-
-
     }
 }
