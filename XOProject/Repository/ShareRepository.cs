@@ -16,5 +16,10 @@ namespace XOProject
 		{
 			return Query().Where(x => x.Symbol.Equals(symbol)).ToListAsync();
 		}
-	}
+
+        public Task<HourlyShareRate> GetShareBySymbol(string symbol)
+        {
+            return Query().Where(x => x.Symbol.Equals(symbol)).OrderByDescending(x => x.Rate).FirstOrDefaultAsync();
+        }
+    }
 }

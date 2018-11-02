@@ -19,7 +19,7 @@ namespace XOProject.Controller
 		[HttpPut("{symbol}")]
         public async void UpdateLastPrice([FromRoute]string symbol)
         {
-            var share = await _shareRepository.Query().Where(x => x.Symbol.Equals(symbol)).OrderByDescending(x => x.Rate).FirstOrDefaultAsync();
+            var share = await _shareRepository.GetShareBySymbol(symbol);
             share.Rate =+ 10;
             await _shareRepository.UpdateAsync(share);
         }        

@@ -5,39 +5,32 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace XOProject.Tests
 {
-	class TradeControllerTests
-	{
-		Mock<IShareRepository> _shareRepositoryMock = new Mock<IShareRepository>();
-		Mock<ITradeRepository> _tradeRepositoryMock = new Mock<ITradeRepository>();
-		Mock<IPortfolioRepository> _portfolioRepositoryMock = new Mock<IPortfolioRepository>();
+    class TradeControllerTests
+    {
+        Mock<IShareRepository> _shareRepositoryMock = new Mock<IShareRepository>();
+        Mock<ITradeRepository> _tradeRepositoryMock = new Mock<ITradeRepository>();
+        Mock<IPortfolioRepository> _portfolioRepositoryMock = new Mock<IPortfolioRepository>();
+        Mock<IGenericRepository<Trade>> _genericRepositoryMock = new Mock<IGenericRepository<Trade>>();
 
-		int portfolioId = 1;
+        int portfolioId = 1;
         string symbol = "REL";
-		public TradeControllerTests()
-		{
-			_portfolioRepositoryMock
-				.Setup(x => x.GetAsync(It.Is<int>(id => id == portfolioId)))
-				.Returns<int>(x => Task.FromResult(new Portfolio() { Id = portfolioId, Name = "John Doe" }));
+        public TradeControllerTests()
+        {
 
-			_shareRepositoryMock.Setup(x => x.GetBySymbol(It.Is<string>(s => s.Equals("REL"))))
-				.Returns(Task.FromResult(new List<HourlyShareRate>(new[]
-					{
-						new HourlyShareRate() { Symbol = "REL", Rate = 50, TimeStamp = DateTime.Now.AddDays(-1) },
-						new HourlyShareRate() { Symbol = "REL", Rate = 100, TimeStamp = DateTime.Now },
-						new HourlyShareRate() { Symbol = "REL", Rate = 150, TimeStamp = DateTime.Now.AddDays(-2) },
-					}))
-				);
-
-			_tradeRepositoryMock.Setup(x => x.GetAllTradings(portfolioId))
-				.Returns(Task.FromResult(new List<Trade>(new[]
-					{
-						new Trade() { Action = "BUY", NoOfShares = 120, PortfolioId = portfolioId, Price = 12000, Symbol = "REL" },
-						new Trade() { Action = "SELL", NoOfShares = 40, PortfolioId = portfolioId, Price = 4000, Symbol = "REL" }
-					}))
-				);
+            _tradeRepositoryMock.Setup(x => x.GetAllTradings(portfolioId))
+                .Returns(Task.FromResult(new List<Trade>(new[]
+                    {
+                        new Trade() {Id = 1, Action = "BUY", NoOfShares = 120, PortfolioId = portfolioId, Price = 12000, Symbol = "REL" },
+                        new Trade() {Id = 2, Action = "SELL", NoOfShares = 40, PortfolioId = portfolioId, Price = 4000, Symbol = "REL" }
+                    }))
+                );
 
             _tradeRepositoryMock.Setup(x => x.GetAnalysis(symbol))
                 .Returns(Task.FromResult(new List<TradeAnalysis>(new[]
@@ -48,21 +41,22 @@ namespace XOProject.Tests
                 );
         }
 
-		[Test]
-		public async Task Get_ShouldReturnAllTradings()
-		{
-			var tradeController = new TradeController(_shareRepositoryMock.Object, _tradeRepositoryMock.Object, _portfolioRepositoryMock.Object);
+        [Test]
+        public async Task Get_ShouldReturnAllTradings()
+        {
+            var tradeController = new TradeController(_shareRepositoryMock.Object, _tradeRepositoryMock.Object, _portfolioRepositoryMock.Object);
 
-			var result = await tradeController.GetAllTradings(portfolioId) as OkObjectResult;
+            var result = await tradeController.GetAllTradings(portfolioId) as OkObjectResult;
 
-			Assert.NotNull(result);
+            Assert.NotNull(result);
 
-			var resultList = result.Value as List<Trade>;
+            var resultList = result.Value as List<Trade>;
 
-			Assert.NotNull(result);
+            Assert.NotNull(result);
 
-			Assert.NotZero(resultList.Count);
-		}
+            Assert.NotZero(resultList.Count);
+            Assert.AreEqual(resultList.FirstOrDefault().Id, 1);
+        }
 
         [Test]
         public async Task GetAnalysis()
@@ -78,6 +72,28 @@ namespace XOProject.Tests
             Assert.NotNull(result);
 
             Assert.NotZero(resultList.Count);
+        }
+
+        [Test]
+        public void UseHttpStatusCodeExceptionMiddleware()
+        {
+            Mock<IApplicationBuilder> _app = new Mock<IApplicationBuilder>();
+            _app.Object.UseHttpStatusCodeExceptionMiddleware();
+            Assert.IsTrue(true);
+        }
+
+        [Test]
+        public async Task TradeRepository_GetAsyncTest()
+        {
+            var optionsbuilder = new DbContextOptionsBuilder<ExchangeContext>();
+            optionsbuilder.UseInMemoryDatabase(databaseName: "XOProjectDb");
+            var _dbContext = new ExchangeContext(optionsbuilder.Options);
+            ITradeRepository _tradeRepository = new TradeRepository(_dbContext);
+            var result = await _tradeRepository.GetAllTradings(1);
+
+            Assert.NotNull(result);
+
+
         }
     }
 }

@@ -3,56 +3,107 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace XOProject.Tests
 {
-	class PortfolioControllerTests
-	{
-		[Test]
-		public async Task GetPortfolioInfo_ReturnsNotNull()
-		{
-			int portfolioId = 1;
+   public class PortfolioControllerTests
+    {
 
-			var portfolioRepositoryMock = new Mock<IPortfolioRepository>();
+        
+        [Test]
+        public async Task GetPortfolioInfo_ReturnsNotNull()
+        {
+            int portfolioId = 1;
 
-			portfolioRepositoryMock
-				.Setup(x => x.GetAsync(It.Is<int>(id => id == portfolioId)))
-				.Returns(Task.FromResult(new Portfolio() { Id = portfolioId, Name = "John Doe" }));
+            var portfolioRepositoryMock = new Mock<IPortfolioRepository>();
 
-			var portfolioController = new PortfolioController(portfolioRepositoryMock.Object);
+            portfolioRepositoryMock
+                .Setup(x => x.GetAsync(It.Is<int>(id => id == portfolioId)))
+                .Returns(Task.FromResult(new Portfolio()
+                {
+                    Id = portfolioId,
+                    Name = "John Doe",
+                    Trade = new System.Collections.Generic.List<Trade> {
+                    new Trade() {Id = 1, Action = "BUY", NoOfShares = 120, PortfolioId = portfolioId, Price = 12000, Symbol = "REL" },
+                    new Trade() {Id = 2, Action = "SELL", NoOfShares = 40, PortfolioId = portfolioId, Price = 4000, Symbol = "REL" }
+                    }
+                }));
 
-			var result = await portfolioController.GetPortfolioInfo(portfolioId) as OkObjectResult;
+            var portfolioController = new PortfolioController(portfolioRepositoryMock.Object);
 
-			Assert.NotNull(result);
-			
-			var resultPortfolio = result.Value as Portfolio;
+            var result = await portfolioController.GetPortfolioInfo(portfolioId) as OkObjectResult;
 
-			Assert.NotNull(resultPortfolio);
+            Assert.NotNull(result);
 
-			Assert.AreEqual(portfolioId, resultPortfolio.Id);
-		}
+            var resultPortfolio = result.Value as Portfolio;
 
-		[Test]
-		public async Task Post_ShouldInsertPortfolio()
-		{
-			var portfolioRepositoryMock = new Mock<IPortfolioRepository>();
+            Assert.NotNull(resultPortfolio);
 
-			var portfolioController = new PortfolioController(portfolioRepositoryMock.Object);
+            Assert.AreEqual(portfolioId, resultPortfolio.Id);
+            Assert.NotZero(resultPortfolio.Trade.Count);
+        }
 
-			var portfolio = new Portfolio()
-			{
-				Name = "John Smith"
-			};
+        [Test]
+        public async Task Post_ShouldInsertPortfolio()
+        {
+            var portfolioRepositoryMock = new Mock<IPortfolioRepository>();
 
-			// Act
-			var result = await portfolioController.Post(portfolio);
+            var portfolioController = new PortfolioController(portfolioRepositoryMock.Object);
 
-			// Assert
-			Assert.NotNull(result);
+            var portfolio = new Portfolio()
+            {
+                Name = "John Smith"
+            };
 
-			var createdResult = result as CreatedResult;
-			Assert.NotNull(createdResult);
-			Assert.AreEqual(201, createdResult.StatusCode);
-		}
-	}
+            // Act
+            var result = await portfolioController.Post(portfolio);
+
+            // Assert
+            Assert.NotNull(result);
+
+            var createdResult = result as CreatedResult;
+            Assert.NotNull(createdResult);
+            Assert.AreEqual(201, createdResult.StatusCode);
+        }
+        [Test]
+        public async Task Post_BadInsertPortfolioRequest()
+        {
+            var portfolioRepositoryMock = new Mock<IPortfolioRepository>();
+
+            var portfolioController = new PortfolioController(portfolioRepositoryMock.Object);
+
+            var portfolio = new Portfolio();
+
+            portfolioController.ModelState.AddModelError("Model", "Not Correct");
+            // Act
+            var result = await portfolioController.Post(portfolio) as BadRequestObjectResult;
+
+            // Assert
+            Assert.NotNull(result);
+
+            var createdResult = result as BadRequestObjectResult;
+
+            Assert.AreEqual(result.StatusCode, 400);
+            Assert.NotNull(result.Value);
+
+
+
+        }
+
+        [Test]
+        public void TradeRepository_GetAllTest()
+        {
+            var optionsbuilder = new DbContextOptionsBuilder<ExchangeContext>();
+            optionsbuilder.UseInMemoryDatabase(databaseName: "XOProjectDb");
+            var _dbContext = new ExchangeContext(optionsbuilder.Options);
+            IPortfolioRepository _portfolioRepository = new PortfolioRepository(_dbContext);
+            var result = _portfolioRepository.GetAll();
+
+            Assert.NotNull(result);
+
+           
+        }
+       
+    }
 }

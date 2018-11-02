@@ -40,7 +40,7 @@ namespace XOProject.Controller
         [HttpGet("Analysis/{symbol}")]
         public async Task<IActionResult> GetAnalysis([FromRoute]string symbol)
         {
-            Task<List<TradeAnalysis>> list = _tradeRepository.GetAnalysis(symbol);
+            var list = await _tradeRepository.GetAnalysis(symbol);
             return Ok(list);
         }
     }

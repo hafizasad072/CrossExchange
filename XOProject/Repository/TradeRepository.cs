@@ -21,10 +21,10 @@ namespace XOProject
             return Query().Where(a => a.Symbol == symbol).GroupBy(a => a.Action).Select(g => new TradeAnalysis
             {
                 Action = g.FirstOrDefault().Action,
-                Average = g.Average(x => x.NoOfShares * x.Price),
-                Maximum = g.Max(m => m.NoOfShares * m.Price),
-                Minimum = g.Min(m => m.NoOfShares * m.Price),
-                Sum = g.Sum(m => m.NoOfShares * m.Price)
+                Average = g.Average(m => m.Price / m.NoOfShares),
+                Maximum = g.Max(m => m.Price / m.NoOfShares),
+                Minimum = g.Min(m => m.Price / m.NoOfShares),
+                Sum = g.Sum(m => m.Price / m.NoOfShares)
             })
             .ToListAsync();
         }
